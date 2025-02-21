@@ -1,0 +1,82 @@
+﻿@page "/"
+
+<PageTitle>ZeroOneX</PageTitle>
+
+<div style="align-content: center; display: flex; justify-content: center;">
+    <InputSelect @bind-Value="identifier">
+        @foreach (var value in Enum.GetValues<ZeroOne>().Where(v => v != ZeroOne.Zero)) {
+            <option value="@value">@(((int)value).ToString("D3"))</option>
+        }
+    </InputSelect>
+    -
+    <InputText @bind-Value="area"></InputText>
+    -
+    <InputText @bind-Value="personal"></InputText>
+</div>
+
+<div style="align-content: center; display: flex; justify-content: center;">
+    @if (IsInputValid) {
+        <p>대응되는 010 번호는 @ZeroOneZeroNumber 입니다.</p>
+    } else {
+        <p>올바른 번호가 아닙니다.</p>
+    }
+</div>
+
+@code {
+
+    private ZeroOne identifier = ZeroOne.One;
+    private string? area;
+    private string? personal;
+
+    private bool IsInputValid => int.TryParse(area, out var areaValue) && int.TryParse(personal, out _) && IsValidIdentifierAndAreaNumber(identifier, areaValue);
+
+    private string ZeroOneZeroNumber {
+        get {
+            var areaNumber = int.Parse(area ?? throw new InvalidOperationException());
+
+            var newAreaNumber = identifier switch {
+                ZeroOne.One => areaNumber switch {
+                    >= 200 and <= 499 => areaNumber + 5000,
+                    >= 500 and <= 899 => areaNumber + 3000,
+                    >= 1700 and <= 1799 => areaNumber + 5400,
+                    >= 9000 and <= 9499 => areaNumber,
+                    >= 9500 and <= 9999 => areaNumber - 1000,
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                ZeroOne.Six => areaNumber switch {
+                    >= 200 and <= 499 => areaNumber + 3000,
+                    >= 500 and <= 899 => areaNumber + 2000,
+                    >= 9000 and <= 9499 => areaNumber - 2000,
+                    >= 9500 and <= 9999 => areaNumber,
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                ZeroOne.Seven => areaNumber switch {
+                    670 => 5070,
+                    689 => 5089,
+                    >= 200 and <= 499 => areaNumber + 6000,
+                    >= 500 and <= 899 => areaNumber + 4000,
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                ZeroOne.Eight => areaNumber switch {
+                    >= 200 and <= 499 => areaNumber + 4000,
+                    >= 500 and <= 899 => areaNumber + 6000,
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                ZeroOne.Nine => areaNumber switch {
+                    >= 200 and <= 499 => areaNumber + 2000,
+                    >= 500 and <= 899 => areaNumber + 5000,
+                    >= 9000 and <= 9499 => areaNumber - 1000,
+                    >= 9500 and <= 9999 => areaNumber - 2000,
+                    _ => throw new ArgumentOutOfRangeException()
+                },
+                ZeroOne.Zero => throw new ArgumentOutOfRangeException(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            return $"010-{newAreaNumber}-{personal}";
+        }
+    }
+
+    private static bool IsValidIdentifierAndAreaNumber(ZeroOne identifier, int areaNumber) => areaNumber is >= 200 and <= 899 || (identifier is ZeroOne.One or ZeroOne.Six or ZeroOne.Nine && areaNumber is >= 9000 and <= 9999) || (identifier == ZeroOne.One && areaNumber is >= 1700 and <= 1799);
+
+}
