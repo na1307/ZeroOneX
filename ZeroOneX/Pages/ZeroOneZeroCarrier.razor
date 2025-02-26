@@ -1,0 +1,33 @@
+﻿<div style="align-content: center; display: flex; justify-content: center;">
+    010-
+    <InputText style="width: 100px" @bind-Value="area"></InputText>
+    -
+    <InputText style="width: 100px" @bind-Value="personal"></InputText>
+</div>
+
+<div style="align-content: center; display: flex; justify-content: center;">
+    @if (IsInputValid) {
+        <p>이 번호의 통신사는 @ZereOneZeroNumberCarrier.GetCarrierName() 입니다. (번호이동이 되지 않았다면)</p>
+    } else {
+        <p>올바른 번호가 아닙니다.</p>
+    }
+</div>
+
+@code {
+
+    private string? area;
+    private string? personal;
+
+    private bool IsInputValid => int.TryParse(area, out var areaValue) && personal?.Length == 4 && int.TryParse(personal, out var personalValue) && IsValidAreaNumber(areaValue, personalValue);
+
+    private Carrier ZereOneZeroNumberCarrier
+        => int.Parse(area ?? throw new InvalidOperationException()) switch {
+            >= 2000 and <= 2179 or >= 3100 and <= 3199 or >= 3500 and <= 3899 or >= 4000 and <= 4199 or >= 4500 and <= 5099 or >= 5200 and <= 5499 or >= 5900 and <= 5969 or >= 6200 and <= 6499 or >= 7100 and <= 7199 or >= 8500 and <= 9499 => Carrier.SKTelecom,
+            >= 2180 and <= 2199 or >= 2500 and <= 3099 or >= 3200 and <= 3499 or >= 4200 and <= 4499 or >= 5100 and <= 5199 or >= 6500 and <= 6899 or >= 7200 and <= 7499 or >= 9500 and <= 9999 => Carrier.KT,
+            >= 2200 and <= 2499 or >= 3900 and <= 3999 or >= 5500 and <= 5899 or >= 7500 and <= 7799 or >= 7900 and <= 8499 => Carrier.LGUPlus,
+            _ => Carrier.Unknown
+        };
+
+    private static bool IsValidAreaNumber(int areaNumber, int personalNumber) => areaNumber is >= 2000 and <= 9999 && personalNumber is >= 0 and <= 9999;
+
+}
