@@ -2,33 +2,70 @@
 
 <PageTitle>ZeroOneX</PageTitle>
 
-<div style="align-content: center; display: flex; justify-content: center;">
-    <InputSelect @bind-Value="identifier">
-        @foreach (var value in Enum.GetValues<ZeroOne>().Where(v => v != ZeroOne.Zero)) {
-            <option value="@value">@(((int)value).ToString("D3"))</option>
-        }
-    </InputSelect>
-    -
-    <InputText style="width: 100px" @bind-Value="area"></InputText>
-    -
-    <InputText style="width: 100px" @bind-Value="personal"></InputText>
-</div>
+<InputRadioGroup @bind-Value="operation">
+    <div style="align-content: center; display: flex; justify-content: center;">
+        <p>
+            <label>
+                <InputRadio Value="Operation.ZereOneXToZeroOneZero"/>
+                01X 번호 변환
+            </label>
+            <label>
+                <InputRadio Value="Operation.ZeroOneZeroCarrier"/>
+                010 번호 통신사 확인
+            </label>
+        </p>
+    </div>
+</InputRadioGroup>
 
-<div style="align-content: center; display: flex; justify-content: center;">
-    @if (IsInputValid) {
-        <p>대응되는 010 번호는 @ZeroOneZeroNumber 입니다.</p>
-    } else {
-        <p>올바른 번호가 아닙니다.</p>
-    }
-</div>
+@if (operation == Operation.ZereOneXToZeroOneZero) {
+    <div style="align-content: center; display: flex; justify-content: center;">
+        <InputSelect @bind-Value="identifier">
+            @foreach (var value in Enum.GetValues<ZeroOne>()) {
+                <option value="@value">@(((int)value).ToString("D3"))</option>
+            }
+        </InputSelect>
+        -
+        <InputText style="width: 100px" @bind-Value="area"></InputText>
+        -
+        <InputText style="width: 100px" @bind-Value="personal"></InputText>
+    </div>
+
+    <div style="align-content: center; display: flex; justify-content: center;">
+        @if (IsInputValid) {
+            <p>대응되는 010 번호는 @ZeroOneZeroNumber 입니다.</p>
+        } else {
+            <p>올바른 번호가 아닙니다.</p>
+        }
+    </div>
+} else {
+    <div style="align-content: center; display: flex; justify-content: center;">
+        010-
+        <InputText style="width: 100px" @bind-Value="area"></InputText>
+        -
+        <InputText style="width: 100px" @bind-Value="personal"></InputText>
+    </div>
+
+    <div style="align-content: center; display: flex; justify-content: center;">
+        @if (IsInputValid) {
+            <p>이 번호의 통신사는 @ZereOneZeroNumberCarrier.GetCarrierName() 입니다. (번호이동이 되지 않았다면)</p>
+        } else {
+            <p>올바른 번호가 아닙니다.</p>
+        }
+    </div>
+}
 
 @code {
 
+    private Operation operation = Operation.ZereOneXToZeroOneZero;
     private ZeroOne identifier = ZeroOne.One;
     private string? area;
     private string? personal;
 
-    private bool IsInputValid => int.TryParse(area, out var areaValue) && int.TryParse(personal, out _) && IsValidIdentifierAndAreaNumber(identifier, areaValue);
+    private bool IsInputValid => operation == Operation.ZereOneXToZeroOneZero ? IsZeroOneXInputValid : IsZeroOneZeroInputValid;
+
+    private bool IsZeroOneXInputValid => int.TryParse(area, out var areaValue) && int.TryParse(personal, out _) && IsValidIdentifierAndAreaNumber(identifier, areaValue);
+
+    private bool IsZeroOneZeroInputValid => int.TryParse(area, out var areaValue) && IsValidAreaNumber(areaValue);
 
     private string ZeroOneZeroNumber {
         get {
@@ -69,7 +106,6 @@
                     >= 9500 and <= 9999 => areaNumber - 2000,
                     _ => throw new ArgumentOutOfRangeException()
                 },
-                ZeroOne.Zero => throw new ArgumentOutOfRangeException(),
                 _ => throw new ArgumentOutOfRangeException()
             };
 
@@ -77,6 +113,26 @@
         }
     }
 
+    private Carrier ZereOneZeroNumberCarrier {
+        get {
+            var areaNumber = int.Parse(area ?? throw new InvalidOperationException());
+
+            return areaNumber switch {
+                >= 2000 and <= 2179 or >= 3100 and <= 3199 or >= 3500 and <= 3899 or >= 4000 and <= 4199 or >= 4500 and <= 5099 or >= 5200 and <= 5499 or >= 5900 and <= 5969 or >= 6200 and <= 6499 or >= 7100 and <= 7199 or >= 8500 and <= 9499 => Carrier.SKTelecom,
+                >= 2180 and <= 2199 or >= 2500 and <= 3099 or >= 3200 and <= 3499 or >= 4200 and <= 4499 or >= 5100 and <= 5199 or >= 6500 and <= 6899 or >= 7200 and <= 7499 or >= 9500 and <= 9999 => Carrier.KT,
+                >= 2200 and <= 2499 or >= 3900 and <= 3999 or >= 5500 and <= 5899 or >= 7500 and <= 7799 or >= 7900 and <= 8499 => Carrier.LGUPlus,
+                _ => Carrier.Unknown
+            };
+        }
+    }
+
     private static bool IsValidIdentifierAndAreaNumber(ZeroOne identifier, int areaNumber) => areaNumber is >= 200 and <= 899 || (identifier is ZeroOne.One or ZeroOne.Six or ZeroOne.Nine && areaNumber is >= 9000 and <= 9999) || (identifier == ZeroOne.One && areaNumber is >= 1700 and <= 1799);
+
+    private static bool IsValidAreaNumber(int areaNumber) => areaNumber is >= 2000 and <= 9999;
+
+    private enum Operation {
+        ZereOneXToZeroOneZero,
+        ZeroOneZeroCarrier
+    }
 
 }
